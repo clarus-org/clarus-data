@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": "SGB — Serviço Geológico do Brasil (geoportal.sgb.gov.br)",
   "query": "https://geoportal.sgb.gov.br/server/rest/services/gestaoterritorial/risco/FeatureServer/0/query?where=cd_geocmu%3D%274314902%27&outFields=grau_risco%2Clocal%2Ctipolo_g1%2Ctipolo_e1%2Cnum_pess%2Cnum_domi%2Cnum_edif%2Cdata_setor%2Cmunic%2Cuf&returnGeometry=true&outSR=4326&f=json",
-  "fetchedAt": "2026-10-27T14:14:32Z",
+  "fetchedAt": "2026-10-27T14:15:07Z",
   "featureCount": 145,
   "sha256": "e27c0e63991a592312dbd2cef86184b6a4086c62ec0624bc81745ce50f19521c",
   "arcgis": {
