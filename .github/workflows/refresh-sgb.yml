@@ -1,0 +1,79 @@
+# Robô diário: baixa os setores de risco do SGB, valida e publica a cópia de reserva no GitHub Pages.
+# Se a validação falhar (resposta vazia, truncada ou queda > 20% no número de setores), o job falha,
+# o arquivo publicado continua o anterior e o GitHub envia e-mail ao dono do repositório.
+name: Atualizar cópia SGB
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # todo dia às 09:00 UTC (06:00 em Brasília)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Aceitar queda maior que 20% no número de setores (use só se a queda for legítima)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # commit do arquivo e do batimento
+  pages: write # publicar no GitHub Pages
+  id-token: write # exigido pelo deploy do Pages
+
+concurrency:
+  group: refresh-sgb
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Baixar e validar dados do SGB
+        env:
+          FORCE: ${{ inputs.force && '--force' || '' }}
+        run: |
+          python3 scripts/update_sgb_snapshot.py --source official \
+            --out sgb/porto-alegre/risk-sectors.json \
+            --previous sgb/porto-alegre/risk-sectors.json \
+            --always-write $FORCE
+
+      - name: Registrar batimento
+        run: |
+          python3 - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          envelope = json.load(open("sgb/porto-alegre/risk-sectors.json"))
+          try:
+              previous = json.load(open("meta/status.json"))
+          except (OSError, ValueError):
+              previous = {}
+          status = {
+              "lastCheckedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "featureCount": envelope["featureCount"],
+              "sha256": envelope["sha256"],
+              "dataChanged": previous.get("sha256") != envelope["sha256"],
+          }
+          with open("meta/status.json", "w") as f:
+              json.dump(status, f, indent=2)
+              f.write("\n")
+          PY
+
+      # Commit diário mesmo sem mudança nos dados: mantém o repositório ativo para o GitHub
+      # não desativar o agendamento (60 dias sem atividade em repositórios públicos).
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sgb meta
+          git commit -m "chore: verificar cópia SGB $(date -u +%Y-%m-%d)"
+          git push
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4
