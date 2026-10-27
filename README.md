@@ -20,8 +20,8 @@ O workflow [`refresh-sgb.yml`](.github/workflows/refresh-sgb.yml) roda todo dia 
 (Brasília) e:
 
 1. baixa os setores do SGB com a mesma consulta que o app usa;
-2. valida a resposta e **recusa** resposta vazia, truncada (`exceededTransferLimit`) ou com
-   queda maior que 20% no número de setores (testes em `Clarus/Scripts/test_update_sgb_snapshot.py`
+2. valida a resposta e **recusa** resposta vazia, truncada (`exceededTransferLimit`), com setor sem polígono ou com
+   queda maior que 20% no número de setores (testes em `scripts/sgb/test_update_sgb_snapshot.py`
    no repositório do app);
 3. grava o arquivo, registra o batimento em `meta/status.json` e faz commit;
 4. publica tudo no GitHub Pages.
@@ -36,7 +36,7 @@ gh workflow run refresh-sgb.yml -R clarus-org/clarus-data
 gh workflow run refresh-sgb.yml -R clarus-org/clarus-data -f force=true
 ```
 
-O script `scripts/update_sgb_snapshot.py` é cópia do original em `Clarus/Scripts/` (repositório
+O script `scripts/update_sgb_snapshot.py` é cópia do original em `scripts/sgb/` (repositório
 do app). Altere lá primeiro e copie para cá.
 
 ## Atribuição

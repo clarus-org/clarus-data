@@ -36,7 +36,7 @@ MIRROR_URL = "https://clarus-org.github.io/clarus-data/sgb/porto-alegre/risk-sec
 def validate(arcgis, previous_count, force):
     """Raise ValueError when the response must not replace the current copy.
 
-    `force` skips only the drop guard; empty or truncated data is never accepted.
+    `force` skips only the drop guard; empty, truncated, or polygon-less data is never accepted.
     """
     features = arcgis.get("features") if isinstance(arcgis, dict) else None
     if not isinstance(features, list):
@@ -45,6 +45,13 @@ def validate(arcgis, previous_count, force):
         raise ValueError("response has no features")
     if arcgis.get("exceededTransferLimit") is True:
         raise ValueError("response was truncated (exceededTransferLimit)")
+    for index, feature in enumerate(features):
+        if not isinstance(feature, dict) or not isinstance(feature.get("attributes"), dict):
+            raise ValueError(f"feature {index} has no attributes")
+        geometry = feature.get("geometry")
+        rings = geometry.get("rings") if isinstance(geometry, dict) else None
+        if not isinstance(rings, list) or not rings or not rings[0]:
+            raise ValueError(f"feature {index} has no polygon")
     if previous_count and not force and len(features) < previous_count * (1 - MAX_DROP_RATIO):
         raise ValueError(
             f"feature count dropped from {previous_count} to {len(features)} (> {int(MAX_DROP_RATIO * 100)}%); "
